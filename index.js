@@ -15,12 +15,16 @@ const sequelize = new Sequelize({
 // Define User model
 class User extends Model {}
 User.init({
-  name: DataTypes.STRING,
-  email: DataTypes.STRING,
-  job: DataTypes.STRING,
-  dateofbirth: DataTypes.STRING
-  
-}, { sequelize, modelName: 'user' });
+    name: DataTypes.STRING,
+    email: DataTypes.STRING,
+    job: DataTypes.STRING,
+    dateofbirth: DataTypes.STRING,
+    username: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+    }
+  }, { sequelize, modelName: 'user' });
 
 // Sync models with database
 sequelize.sync();
@@ -40,37 +44,58 @@ app.get('/users', async (req, res) => {
   res.json(users);
 });
 
-app.get('/users/:id', async (req, res) => {
-  const user = await User.findByPk(req.params.id);
-  res.json(user);
-});
+// Get user by username
+app.get('/users/:username', async (req, res) => {
+    const user = await User.findOne({ where: { username: req.params.username } });
+    if (user) {
+      res.json(user);
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  });
+
 
 app.post('/users', async (req, res) => {
   const user = await User.create(req.body);
   res.json(user);
 });
 
-app.put('/users/:id', async (req, res) => {
-  const user = await User.findByPk(req.params.id);
-  if (user) {
-    await user.update(req.body);
-    res.json(user);
-  } else {
-    res.status(404).json({ message: 'User not found' });
-  }
-});
+app.put('/users/:username', async (req, res) => {
+    const { username } = req.params;
+    try {
+      const user = await User.findOne({ where: { username } });
+      if (user) {
+        await user.update(req.body);
+        res.json(user);
+      } else {
+        res.status(404).json({ message: 'User not found' });
+      }
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
 
-app.delete('/users/:id', async (req, res) => {
-  const user = await User.findByPk(req.params.id);
-  if (user) {
-    await user.destroy();
-    res.json({ message: 'User deleted' });
-  } else {
-    res.status(404).json({ message: 'User not found' });
-  }
-});
+  app.delete('/users/:username', async (req, res) => {
+    const { username } = req.params;
+    try {
+      const user = await User.findOne({ where: { username } });
+      if (user) {
+        await user.destroy();
+        res.json({ message: 'User deleted' });
+      } else {
+        res.status(404).json({ message: 'User not found' });
+      }
+    } catch (error) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
 
 // Start server
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
+
+  
